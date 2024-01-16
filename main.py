@@ -28,17 +28,17 @@ def get_datas():
     for url in urls:
         r = requests.get(url)
         soup = BeautifulSoup(r.text, 'html.parser')
-        #get name and tel of the website
+        # get name and tel of the website
         soup_name = soup.find("h1").getText()
         soup_tel = regex_tel(soup.find('a', attrs={"itemprop": "telephone"}).get("href"))
-        # Update dict for excel import
+        # Update dict for excel
         entreprise_contact.update({soup_name: soup_tel})
 
         print(soup_name + '\n' + soup_tel + '\n -----------')
         time.sleep(DELAY)  # delay request
 
     excel_contact = pd.Series(entreprise_contact)
-    excel_contact.to_excel('contact_entreprise.xlsx')
+    excel_contact.to_excel('contact_entreprises.xlsx')
 
 if __name__ == '__main__':
     get_datas()
