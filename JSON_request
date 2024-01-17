@@ -1,0 +1,99 @@
+search macro
+Storage Mode
+More Info
+auto_requests
+Table ViewSource View (JSON)
+1
+{
+2
+  "Name": "auto_requests",
+3
+  "CreationDate": "2024-1-17",
+4
+  "Commands": [
+5
+    {
+6
+      "Command": "open",
+7
+      "Target": "https://www.google.com",
+8
+      "Value": "",
+9
+      "Description": "Ouvre Google"
+10
+    },
+11
+    {
+12
+      "Command": "type",
+13
+      "Target": "name=q",
+14
+      "Value": "inurl:business.site + \"perpignan\"",
+15
+      "Description": "Effectue une recherche sur Google"
+16
+    },
+17
+    {
+18
+      "Command": "comment",
+19
+      "Target": "type // name=q",
+20
+      "Value": "inurl:business.site + \"perpignan\"",
+21
+      "Description": "Effectue une recherche sur Google"
+22
+    },
+23
+    {
+24
+      "Command": "sendKeys",
+25
+      "Target": "name=q",
+26
+      "Value": "${KEY_ENTER}",
+27
+      "Description": "Appuie sur Entrée pour lancer la recherche"
+28
+    },
+29
+    {
+30
+      "Command": "waitForPageToLoad",
+31
+      "Target": "3000",
+32
+      "Value": "",
+33
+      "Description": ""
+34
+    },
+35
+    {
+36
+      "Command": "store",
+37
+      "Target": "true",
+38
+      "Value": "continueLoop",
+39
+      "Description": "Initialise la variable de contrôle de la boucle"
+40
+    },
+41
+    {
+42
+      "Command": "store",
+43
+      "Target": "None",
+44
+      "Value": "elementExist",
+45
+      "Description": ""
+46
+    },
+LogsVariablesScreenshotsCSV👁Visual
+UI.Vision RPA: User Forum - Online Help
