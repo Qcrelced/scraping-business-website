@@ -18,7 +18,7 @@ serp_rank: int = 1
 
 # to control a Chrome window in headless mode
 options = Options()
-# options.add_argument('--headless=new') # comment it for testing
+#options.add_argument('--headless=new') # comment it for testing
 
 # initialize a web driver instance with the
 # specified options
@@ -78,27 +78,27 @@ for serp_div in serp_divs:
     except NoSuchElementException:
         continue
 
+    list_link = []
+    for link in driver.find_elements(By.CLASS_NAME, "tjvcx GvPZzd cHaqb").get:
+        list_link.append(link)
 
-    links = driver.find_elements(By.CLASS_NAME, "tjvcx GvPZzd cHaqb")
-    print(links)
-    # data extraction logic
-    url = serp_title_a.get_attribute("href")
-    title = serp_title_h3.get_attribute("innerText")
-    description = serp_description_div.get_attribute("innerText")
-
-    # populate a new SERP data element and
-    # add it to the list
-    serp_element = {
-        'rank': serp_rank,
-        'url': url,
-        'title': title,
-        'description': description
-    }
-    serp_element.update(serp_element)
-    serp_rank += 1
-    print(serp_element)
-
-while (1 == 1):
-    sleep(10)
+    for link in list_link:
+        print(link)
+    # # data extraction logic
+    # url = serp_title_a.get_attribute("href")
+    # title = serp_title_h3.get_attribute("innerText")
+    # description = serp_description_div.get_attribute("innerText")
+    #
+    # # populate a new SERP data element and
+    # # add it to the list
+    # serp_element = {
+    #     'rank': serp_rank,
+    #     'url': url,
+    #     'title': title,
+    #     'description': description
+    # }
+    # serp_element.update(serp_element)
+    # serp_rank += 1
+    # print(serp_element)
 # close the browser and free up the resources
 driver.quit()
