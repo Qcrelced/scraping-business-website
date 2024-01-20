@@ -6,7 +6,7 @@ import re
 
 # inurl:business.site + "perpignan"
 
-DELAY = 1 / 1.39  # Calculate the delay for 1.39 requests per second
+DELAY = 5  # Calculate the delay for 1.39 requests per second
 
 ##### TEMP #####
 urls = [
