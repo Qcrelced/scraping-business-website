@@ -11,14 +11,13 @@ from time import sleep
 # Use for click button next page when = transform: scale(0)
 button_attr_style_default: str = 'transform: scale(1);'
 request: str = str(input("Ville : "))
-request = "perpignan"  # Temporary, replace with user input
+request = "narbonne"  # Temporary, replace with user input
 options = Options()  # Set up Chrome options
 # options.add_argument('--headless=new')  # Commented for testing
 driver = webdriver.Chrome(
     service=Service(),
     options=options
 )
-WebDriverWait(driver, 5)
 
 
 # Function to handle the cookie dialog
@@ -31,7 +30,7 @@ def cookie_dialog():
     except NoSuchElementException:
         print("Cookie dialog not present")
     except:
-        print("Find element error")
+        print("cookie_dialog error")
     finally:
         print("---cookie_dialog clause---")
 
@@ -91,10 +90,28 @@ def go_last_page(omitted_result_page=False):
             pass
     print("---go_last_page clause---")
 
+
+def scraping():
+    valeur_a_supprimer = ""
+    urls = []
+    i = 0
+    for url in driver.find_elements(By.CLASS_NAME, "byrV5b"):
+            urls.append(url.find_element(By.TAG_NAME, "cite").text)
+    while i < len(urls):
+        if urls[i] == valeur_a_supprimer:
+            urls.remove(urls[i])
+        else:
+            i += 1
+    print(urls)
+    return urls
+
+
 # Connect to the target page (Google Search)
 driver.get(f'https://www.google.com/search?q=inurl%3Abusiness.site+%2B+%22{request}%22')
+sleep(20)
 
 # Handle the cookie dialog
 cookie_dialog()
 # Navigate to the last page of search results
 go_last_page()
+scraping()
