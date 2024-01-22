@@ -1,3 +1,5 @@
+import requests
+from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.common import NoSuchElementException
 from selenium.webdriver.chrome.service import Service
@@ -6,9 +8,16 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from time import sleep
+from modules.util import create_file_with_list
+from modules.util import regex_tel
+from modules.util import retrieve_list_from_file
 
 # Default style attribute for the button
 # Use for click button next page when = transform: scale(0)
+villes = [
+    "narbonne"
+]
+DELAY = 10
 button_attr_style_default: str = 'transform: scale(1);'
 request: str = str(input("Ville : "))
 request = "narbonne"  # Temporary, replace with user input
@@ -39,25 +48,27 @@ def cookie_dialog():
 def go_last_page(omitted_result_page=False):
     last_page_google: bool = False
     scroll_first_page: bool = True
-    xpath_button_page = "/html/body/div[6]/div/div[12]/div[1]/div[4]/div/div[3]/div[4]/a[1]"
+    sleep(2)
+    button_page = "T7sFge.sW9g3e.VknLRd"
 
-    # Adjust XPath for omitted result page
-    if omitted_result_page == True:
-        xpath_button_page = "/html/body/div[5]/div/div[12]/div/div[4]/div/div[3]/div[4]/a[1]"
-
-    # Scroll to the bottom of the first page
+    # Scroll to the bottom of the first pageb
     while scroll_first_page:
         scrollY_before = driver.execute_script('return window.scrollY')
         driver.execute_script('window.scrollTo({top: document.documentElement.scrollHeight})')
-        sleep(1.5)
+        sleep(1)
         scrollY_after = driver.execute_script('return window.scrollY')
         if scrollY_after == scrollY_before:
             scroll_first_page = False
-
+    try:
+        driver.find_element(By.CLASS_NAME, "T7sFge.sW9g3e.VknLRd")
+    except NoSuchElementException:
+        print("Element not found")
+    except:
+        print("Button error")
     # Continue navigating to the next page until the last page
     while not last_page_google:
         try:
-            button_page_style = driver.find_element(By.XPATH, xpath_button_page).get_attribute('style')
+            button_page_style = driver.find_element(By.CLASS_NAME, button_page).get_attribute('style')
         except NoSuchElementException:
             print("Button page style attribute not present")
             last_page_google = True
@@ -70,7 +81,7 @@ def go_last_page(omitted_result_page=False):
             else:
                 wait = WebDriverWait(driver, 10)
                 next_button_page = wait.until(EC.element_to_be_clickable(
-                    (By.XPATH, xpath_button_page)))
+                    (By.CLASS_NAME, button_page)))
                 driver.execute_script("arguments[0].click();", next_button_page)
         finally:
             sleep(2)
@@ -91,7 +102,7 @@ def go_last_page(omitted_result_page=False):
     print("---go_last_page clause---")
 
 
-def scraping():
+def scraping_urls():
     valeur_a_supprimer = ""
     urls = []
     i = 0
@@ -102,16 +113,47 @@ def scraping():
             urls.remove(urls[i])
         else:
             i += 1
-    print(urls)
+    create_file_with_list(f"list_{request}", urls)
     return urls
 
+def scrapping_datas(urls):
+    entreprise_contact = {}
+    i = 0
+    #get num and name
+    for url in urls:
+        r = requests.get(url)
+        soup = BeautifulSoup(r.text, 'html.parser')
+        # get name and tel of the website
+        soup_name = soup.find("h1").getText()
+        soup_tel = regex_tel(soup.find('a', attrs={"itemprop": "telephone"}).get("href"))
+        # Update dict for excel
+        entreprise_contact.update({soup_name: soup_tel})
 
-# Connect to the target page (Google Search)
-driver.get(f'https://www.google.com/search?q=inurl%3Abusiness.site+%2B+%22{request}%22')
-sleep(20)
+        print(soup_name + '\n' + soup_tel + '\n -----------')
+        sleep(DELAY)  # delay request
+        i += 1
+        if i == 1:
+            break
 
-# Handle the cookie dialog
-cookie_dialog()
-# Navigate to the last page of search results
-go_last_page()
-scraping()
+def test_input():
+    driver.get("https://cityphone66.business.site/")
+    driver.execute_script('let nom = document.querySelector(".whsOnd.zHQkBf[type=\"text\"]"); nom.setAttribute("data-initial-value", "Declercq"); let tel = document.querySelector(".whsOnd.zHQkBf[type=\"tel\"]"); tel.setAttribute("data-initial-value", "06 26"); let email = document.querySelector(".whsOnd.zHQkBf[type=\"email\"]"); email.setAttribute("data-initial-value", "declercq@gmail.com"; let description = document.querySelector(".KHxj8b.tL9Q4c"); description.setAttribute("data-initial-value", "Bonjour");')
+
+
+# def search(ville):
+#     driver.get(f'https://www.google.com/search?q=inurl%3Abusiness.site+%2B+%22{ville}%22')
+#     sleep(25)
+#     cookie_dialog()
+#     go_last_page()  # Navigate to the last page of search results
+#     urls = scraping_urls()
+#     create_file_with_list(ville, urls)
+
+# for ville in villes:
+#     search(ville)
+#     liste = retrieve_list_from_file(ville)
+# list_temp = retrieve_list_from_file('narbonne')
+# scrapping_datas(list_temp)
+test_input()
+
+while 1==1:
+    sleep(2)
