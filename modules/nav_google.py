@@ -136,9 +136,36 @@ def scrapping_datas(urls):
             break
 
 def test_input():
-    driver.get("https://cityphone66.business.site/")
-    driver.execute_script('let nom = document.querySelector(".whsOnd.zHQkBf[type=\"text\"]"); nom.setAttribute("data-initial-value", "Declercq"); let tel = document.querySelector(".whsOnd.zHQkBf[type=\"tel\"]"); tel.setAttribute("data-initial-value", "06 26"); let email = document.querySelector(".whsOnd.zHQkBf[type=\"email\"]"); email.setAttribute("data-initial-value", "declercq@gmail.com"; let description = document.querySelector(".KHxj8b.tL9Q4c"); description.setAttribute("data-initial-value", "Bonjour");')
+    driver.get("https://dermatologue-perpignan-blog-dinformations.business.site/")
+    sleep(5)
+    print('start')
+    get_iframe = driver.execute_script("""
+        let header = document.getElementsByClassName('SnapformContent tzdnMe')
+        console.log(header)
+        let frame = document.getElementsByClassName('SnapformFrame lud4Oc')
+        frame = frame[0].querySelector('iframe')
+        frame = frame.getAttribute('id')
+        //frame = frame.getAttribute('src')
+        return frame
+    """)
+    try:
+        driver.switch_to.frame(get_iframe)
+        print('switch réussi')
+    except:
+        print('Error switch')
 
+
+    driver.execute_script("""
+        let email = document.querySelector('.whsOnd.zHQkBf[type="email"]');
+        email.value = 'email@gmail.com'; // Modifier la valeur
+        email.dispatchEvent(new Event('input', { bubbles: true })); // Déclencher l'événement 'input'
+        
+        let desc = document.querySelector('.KHxj8b.tL9Q4c');
+        desc.value = 'Bonjour, cest Moi'; // Modifier la valeur
+        desc.dispatchEvent(new Event('input', { bubbles: true })); // Déclencher l'événement 'input'
+    """)
+
+    sleep(5)
 
 # def search(ville):
 #     driver.get(f'https://www.google.com/search?q=inurl%3Abusiness.site+%2B+%22{ville}%22')
@@ -153,7 +180,7 @@ def test_input():
 #     liste = retrieve_list_from_file(ville)
 # list_temp = retrieve_list_from_file('narbonne')
 # scrapping_datas(list_temp)
-test_input()
 
+test_input()
 while 1==1:
     sleep(2)
