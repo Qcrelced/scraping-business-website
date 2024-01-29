@@ -1,19 +1,5 @@
-
 import pandas as pd
 import re
-import pickle
-
-# def choose_driver(navigator="chrome", endless=False):
-#     options = Options()
-#     if endless:
-#         options.add_argument('--headless=new')
-#     match navigator:
-#         case "chrome":
-#             driver = webdriver.Chrome(
-#                 service=Service(),
-#                 options=options
-#             )
-#             return driver
 
 
 # RegEx for tel href
@@ -24,28 +10,37 @@ def regex_tel(soup_tel):
     return soup_tel
 
 
+def regex_liens(url):
+    regex = r'https?://[^\s]+'
+    url = re.findall(regex, url)
+    return url
+
+
 # Function to create a file and store a Python list in it
 def create_file_with_list(file_name, list_urls):
-    with open(file_name, 'wb') as file:
-        pickle.dump(list_urls, file)
+    try:
+        with open(f"{file_name}_urls.txt", 'w') as file:
+            file.write(str(list_urls))
+            return file
+    except Exception as e:
+        print(e)
     print(f"The list has been stored in the file '{file_name}'.")
+
 
 # Function to retrieve a list from a file
 def retrieve_list_from_file(file_name):
     try:
-        with open(file_name, 'rb') as file:
-            list_urls = pickle.load(file)
+        with open(file_name, 'r') as file:
+            list_urls = file.read()
             return list_urls
     except FileNotFoundError:
         print(f"The file '{file_name}' does not exist.")
-        return None
     except Exception as e:
         print(f"An error occurred while retrieving the list: {e}")
-        return None
+
 
 # Creates an Excel file with company data, named based on the city.
-def write_file_datas(datas, city_search):
+def create_excel_datas(datas, city_search):
     excel_contact = pd.Series(datas)
-    excel_contact.to_excel(f'contact_entreprises_{city_search}.xlsx')
-
-
+    excel_contact.to_excel(f'contact_entreprises_{city_search}.xlsx', engine="xlsxwriter")
+    return excel_contact
