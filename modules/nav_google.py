@@ -1,3 +1,5 @@
+import random
+
 import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -12,8 +14,8 @@ from modules.util import regex_tel
 from modules.mail_export import mail_export
 from modules.util import create_excel_datas
 
+DELAY = random.randint(50, 70)
 # Use for click button next page when = transform: scale(0)
-DELAY = 50
 button_attr_style_default: str = 'transform: scale(1);'
 options = Options()  # Set up Chrome options
 # options.add_argument('--headless=new')  # Commented for testing
@@ -40,12 +42,12 @@ def cookie_dialog():
 
 
 # Function to navigate to the last page of Google search results
-def go_last_page(omitted_result_page=False):
+def go_last_page(omitted_result_page=False, with_omitted_result=False):
     print("---go_last_page open---")
+    button_page: str = "T7sFge.sW9g3e.VknLRd"
     last_page_google: bool = False
     scroll_first_page: bool = True
     sleep(2)  # Sleep for load page
-    button_page = "T7sFge.sW9g3e.VknLRd"
 
     # Scroll to the bottom of the first page
     while scroll_first_page:
@@ -57,11 +59,11 @@ def go_last_page(omitted_result_page=False):
             scroll_first_page = False
     # Find button "more result"
     try:
-        driver.find_element(By.CLASS_NAME, "T7sFge.sW9g3e.VknLRd")
+        driver.find_element(By.CLASS_NAME, button_page)
     except NoSuchElementException:
-        print("Element not found")
+        print("Element button next page")
     except Exception as e:
-        print("Button error, ", e)
+        print("Button next page error, ", e)
     # Continue navigating to the next page until the last page
     while not last_page_google:
         try:
@@ -69,8 +71,10 @@ def go_last_page(omitted_result_page=False):
         except NoSuchElementException:
             print("Button page style attribute not present")
             last_page_google = True
+            continue
         except Exception as e:
             print("Error in button page style attribute", e)
+            continue
         else:
             if button_page_style != button_attr_style_default:
                 last_page_google = True
@@ -83,21 +87,21 @@ def go_last_page(omitted_result_page=False):
         finally:
             sleep(2)
 
-    # If omitted result page, click on the "Omitted results" button and call the function recursively
-    if omitted_result_page == False:
-        try:
-            button_omitted_result = driver.find_element(By.ID, 'ofr')
-        except NoSuchElementException:
-            print("Element button omitted result not present")
-        except Exception as e:
-            print("Error in button omitted result", e)
-        else:
-            button_omitted_result.find_element(By.TAG_NAME, 'a').click()
-            go_last_page(omitted_result_page=True)
-        finally:
-            pass
-    if omitted_result_page == True:
-        print("---go_last_page clause---")
+    if with_omitted_result:
+        # If omitted result page, click on the "Omitted results" button and call the function recursively
+        if omitted_result_page == False:
+            try:
+                button_omitted_result = driver.find_element(By.ID, 'ofr')
+            except NoSuchElementException:
+                print("Element button omitted result not present")
+            except Exception as e:
+                print("Error in button omitted result", e)
+            else:
+                button_omitted_result.find_element(By.TAG_NAME, 'a').click()
+                go_last_page(omitted_result_page=True)
+            finally:
+                pass
+    print("---go_last_page clause---")
 
 
 # Scrap les URls après avoir parcouru toutes les pages
@@ -108,8 +112,8 @@ def scraping_urls():
     # Récupère toutes les URLs
     for url in driver.find_elements(By.CLASS_NAME, "tjvcx.GvPZzd.cHaqb"):
         try:
-            toto = url.find_element(By.TAG_NAME, "span").text
-            url.text.replace(toto, "")
+            span_text = url.find_element(By.TAG_NAME, "span").text
+            url.text.replace(span_text, "")
             urls.append(url)
         except NoSuchElementException:
             urls.append(url.text)
@@ -126,11 +130,17 @@ def scraping_urls():
 
 
 def scrapping_datas(urls):
+    headers = {
+        'User-Agent': """Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36""",
+        'Referer': 'https://www.google.com/'}
     entreprise_contact = {}
     i = 0
     # get num and name
     for url in urls:
-        r = requests.get(url)
+        if 'display' in url.get('style', '') and 'none' in url['style']:
+            continue    
+        sleep(random.randint(50, 65))
+        r = requests.get(url, headers=headers)
         soup = BeautifulSoup(r.text, 'html.parser')
         # get name and tel of the website
         soup_name = soup.find("h1").getText()
@@ -141,11 +151,9 @@ def scrapping_datas(urls):
         i += 1
         if i == 1:
             return entreprise_contact
-        sleep(45)
 
 
 def form_input():
-    driver.get("https://dermatologue-perpignan-blog-dinformations.business.site/")
     sleep(5)
     print('start')
     get_iframe = driver.execute_script("""
