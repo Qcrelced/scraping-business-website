@@ -21,7 +21,6 @@ def create_file_with_list(file_name, list_urls):
     try:
         with open(f"{file_name}_urls.txt", 'w') as file:
             file.write(str(list_urls))
-            return file
     except Exception as e:
         print(e)
     print(f"The list has been stored in the file '{file_name}'.")
@@ -42,5 +41,5 @@ def retrieve_list_from_file(file_name):
 # Creates an Excel file with company data, named based on the city.
 def create_excel_datas(datas, city_search):
     excel_contact = pd.Series(datas)
-    excel_contact.to_excel(f'contact_entreprises_{city_search}.xlsx', engine="xlsxwriter")
+    excel_contact.to_excel(f'contact_entreprises_{city_search}.xlsx')
     return excel_contact
