@@ -1,5 +1,4 @@
 import random
-
 import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -14,16 +13,16 @@ from modules.util import regex_tel
 from modules.mail_export import mail_export
 from modules.util import create_excel_datas
 
-DELAY = random.randint(50, 70)
-# Use for click button next page when = transform: scale(0)
-button_attr_style_default: str = 'transform: scale(1);'
+DELAY = random.randint(45, 70)
+
+entreprise_contact = {}
+button_attr_style_default: str = 'transform: scale(1);' # Use for click button next page when = transform: scale(0)
 options = Options()  # Set up Chrome options
 # options.add_argument('--headless=new')  # Commented for testing
 driver = webdriver.Chrome(
     service=Service(),
     options=options
 )
-
 
 # Function to handle the cookie dialog
 def cookie_dialog():
@@ -40,16 +39,10 @@ def cookie_dialog():
     finally:
         print("---cookie_dialog clause---")
 
-
-# Function to navigate to the last page of Google search results
-def go_last_page(omitted_result_page=False, with_omitted_result=False):
-    print("---go_last_page open---")
-    button_page: str = "T7sFge.sW9g3e.VknLRd"
-    last_page_google: bool = False
+# Scroll to the bottom of the first page
+def scroll_down():
+    print("---Scroll_down open---")
     scroll_first_page: bool = True
-    sleep(2)  # Sleep for load page
-
-    # Scroll to the bottom of the first page
     while scroll_first_page:
         scrollY_before = driver.execute_script('return window.scrollY')
         driver.execute_script('window.scrollTo({top: document.documentElement.scrollHeight})')
@@ -57,6 +50,14 @@ def go_last_page(omitted_result_page=False, with_omitted_result=False):
         scrollY_after = driver.execute_script('return window.scrollY')
         if scrollY_after == scrollY_before:  # Button more result appear
             scroll_first_page = False
+    print("---Scroll_down clause---")
+
+# Function to navigate to the last page of Google search results
+def go_last_page(omitted_result_page=False, with_omitted_result=False):
+    print("---go_last_page open---")
+    button_page: str = "T7sFge.sW9g3e.VknLRd"
+    last_page_google: bool = False
+
     # Find button "more result"
     try:
         driver.find_element(By.CLASS_NAME, button_page)
@@ -105,35 +106,33 @@ def go_last_page(omitted_result_page=False, with_omitted_result=False):
 
 
 # Scrap les URls après avoir parcouru toutes les pages
-def scraping_urls():
+# Ajoute les URLs de la page dans la liste globale
+def scraping_urls(id_div):
     valeur_a_supprimer = ""  # Supprimes les liens vides
-    urls = []
+    page_urls = []
     i = 0
     # Récupère toutes les URLs
-    for url in driver.find_elements(By.CLASS_NAME, "tjvcx.GvPZzd.cHaqb"):
+    for url in driver.find_elements(By.ID, "tjvcx.GvPZzd.cHaqb"):
+        # Récupère seulement le nom de domaine
         try:
             span_text = url.find_element(By.TAG_NAME, "span").text
             url.text.replace(span_text, "")
-            urls.append(url)
+            page_urls.append(url)
         except NoSuchElementException:
-            urls.append(url.text)
+            page_urls.append(url.text)
         except Exception as e:
-            print("Append url in urls, ", e)
+            print("Error on append url in page_urls, ", e)
     # Parcours la liste pour supprimer les elements vides
-    while i < len(urls):
-        if urls[i] == valeur_a_supprimer:
-            urls.remove(urls[i])
+    while i < len(page_urls):
+        if page_urls[i] == valeur_a_supprimer:
+            page_urls.remove(page_urls[i])
         else:
             i += 1
-    # Créer un fichier avec toutes les URL
-    return urls
 
-
-def scrapping_datas(urls):
+def scraping_datas(urls):
     headers = {
         'User-Agent': """Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36""",
         'Referer': 'https://www.google.com/'}
-    entreprise_contact = {}
     i = 0
     # get num and name
     for url in urls:
@@ -154,8 +153,7 @@ def scrapping_datas(urls):
 
 
 def form_input():
-    sleep(5)
-    print('start')
+    print('-- form_input open---')
     get_iframe = driver.execute_script("""
         let header = document.getElementsByClassName('SnapformContent tzdnMe')
         console.log(header)
@@ -169,8 +167,7 @@ def form_input():
         driver.switch_to.frame(get_iframe)
         print('switch réussi')
     except Exception as e:
-        print('Error switch', e)
-
+        print('Error switch iframe', e)
     driver.execute_script("""
         let email = document.querySelector('.whsOnd.zHQkBf[type="email"]');
         email.value = 'email@gmail.com';
@@ -179,11 +176,10 @@ def form_input():
         let desc = document.querySelector('.KHxj8b.tL9Q4c');
         desc.value = 'Bonjour, cest Moi';
         desc.dispatchEvent(new Event('input', { bubbles: true })); // Déclencher l'événement 'input'
-    """)
-    driver.execute_script("""
         let button_form = document.querySelector('.U26fgb.O0WRkf.zZhnYe.e3Duub.C0oVfc.SS9F9d.M9Bg4d');
         button_form.click();
     """)
+    print('-- form_input clause---')
 
 
 # Execute la recherche pour chaque ville
@@ -191,10 +187,11 @@ def search(ville):
     driver.get(f'https://www.google.com/search?q=inurl%3Abusiness.site+%2B+%22{ville}%22')
     sleep(15)
     cookie_dialog()
+    scroll_down()
     go_last_page()  # Navigate to the last page of search results
     urls = scraping_urls()
     # create_file_with_list(ville, urls)
     # companies_urls = retrieve_list_from_file(f"{ville}.txt")
-    datas = scrapping_datas(urls)
+    datas = scraping_datas(urls)
     create_excel_datas(datas, ville)
     mail_export(f'contact_entreprises_{ville}.xlsx')
