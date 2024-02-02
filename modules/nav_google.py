@@ -1,4 +1,7 @@
 import random
+import time
+from datetime import datetime
+
 import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -13,7 +16,6 @@ from modules.util import regex_tel
 from modules.mail_export import mail_export
 from modules.util import create_excel_datas
 
-DELAY = random.randint(50, 70)
 global_urls = []
 entreprise_contact = {}
 # Use for click button next page when = transform: scale(0)
@@ -43,6 +45,7 @@ def cookie_dialog():
 
 
 def scroll_down():
+    print("---scroll_down open ---")
     scroll_first_page: bool = True
     sleep(2)  # Sleep for load page
     # Scroll to the bottom of the first page
@@ -56,12 +59,25 @@ def scroll_down():
     print("---end scroll ---")
 
 
+def verify_response():
+    try:
+        driver.find_element(By.ID, 'infoDiv')
+    except:
+        pass
+    else:
+        print("ERROR : Limit request, TOO MANY REQUEST !")
+        print(datetime.now().strftime("%D %H:%M:%S"))
+        print("TAPER: GO , pour continuez")
+        restart = str(input(" > "))
+        while restart != 'GO':
+            restart = str(input(" > "))
+
+
 # Function to navigate to the last page of Google search results
 def click_next_button(omitted_result_page=False, with_omitted_result=False, click=False):
     print("---go_last_page open---")
     button_page: str = "T7sFge.sW9g3e.VknLRd"
     last_page_google: bool = False
-
     # Find button "more result"
     if click == True:
         try:
@@ -87,8 +103,7 @@ def click_next_button(omitted_result_page=False, with_omitted_result=False, clic
                     print('info: last_page_google end while button page')
                 else:
                     wait = WebDriverWait(driver, 10)
-                    next_button_page = wait.until(EC.element_to_be_clickable(
-                        (By.CLASS_NAME, button_page)))
+                    next_button_page = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, button_page)))
                     driver.execute_script("arguments[0].click();", next_button_page)
             finally:
                 sleep(2)
@@ -110,31 +125,6 @@ def click_next_button(omitted_result_page=False, with_omitted_result=False, clic
     print("---go_last_page clause---")
 
 
-# Scrap les URls après avoir parcouru toutes les pages
-def scraping_urls(div):
-    counter = 0
-    temp = []
-    # Récupère toutes les URLs
-    print("scraping url")
-    for url in driver.find_element(By.ID, div).find_elements(By.CLASS_NAME, "tjvcx.GvPZzd.cHaqb"):
-        print(url.text)
-        try:
-            span_text = url.find_element(By.TAG_NAME, "span").text
-            sleep(random.randint(20, 30))
-            url = url.text.replace(span_text, "")
-            global_urls.append(url)
-            temp.append(url)
-        except NoSuchElementException:
-            print(url.text)
-            global_urls.append(url.text)
-            temp.append(url.text)
-        except Exception as e:
-            print("Append url in urls, ", e)
-        else:
-            counter += 1
-    return temp
-
-
 def clear_globals_urls(urls):
     valeur_a_supprimer = ""  # Supprimes les liens vides
     i = 0
@@ -144,11 +134,33 @@ def clear_globals_urls(urls):
             urls.remove(urls[i])
         else:
             i += 1
-    # Créer un fichier avec toutes les URL
+    return urls
+
+
+# Scrap les URls après avoir parcouru toutes les pages
+def scraping_urls(div):
+    counter = 0
+    temp = []
+    # Récupère toutes les URLs
+    print("---scraping_url open---")
+    for url in driver.find_element(By.ID, div).find_elements(By.CLASS_NAME, "tjvcx.GvPZzd.cHaqb"):
+        try:
+            span_text = url.find_element(By.TAG_NAME, "span").text
+            url = url.text.replace(span_text, "")
+            temp.append(url)
+        except NoSuchElementException:
+            global_urls.append(url.text)
+            temp.append(url.text)
+        except Exception as e:
+            print("Append url in urls, ", e)
+        else:
+            counter += 1
+    print("---scraping_url clause")
+    clear_globals_urls(temp)
+    return temp
 
 
 def scrapping_datas(urls):
-    clear_globals_urls(urls)
     print(urls)
     user_agents = [
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'
@@ -158,30 +170,20 @@ def scrapping_datas(urls):
         'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
         'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15'
         'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15'
-    ]    # get num and name
+    ]  # get num and name
     for url in urls:
         print(url)
         sleep(random.randint(25, 35))
         try:
+            verify_response()
             driver_options = Options()
             driver_options.add_argument(f'user-agent={random.choice(user_agents)}')
             driver_options.add_argument('--headless=new')  # Commented for testing
-            driver = webdriver.Chrome(options = driver_options)
+            driver = webdriver.Chrome(options=driver_options)
             driver.get(f'https://webcache.googleusercontent.com/search?q=cache%3A{url}')
-            # r = requests.get(f'https://webcache.googleusercontent.com/search?q=cache%3A{url}')
         except Exception as e:
             print(e)
             continue
-        # On regarde le Code de page
-        #if driver.status_code == 429:
-        #    print('Rate limit reached')
-        #    break
-        #elif r.status_code == 404:
-        #    print(f'Info: Error 404')
-        #    continue
-        #elif r.status_code != 200:
-        #    print(f'Error: {r.status_code}. Try a different proxy or user-agent')
-        #    break
 
         soup = BeautifulSoup(driver.page_source, 'html.parser')
         # get name and tel of the website
@@ -194,7 +196,6 @@ def scrapping_datas(urls):
 
 def form_input():
     sleep(5)
-    print('start')
     get_iframe = driver.execute_script("""
         let header = document.getElementsByClassName('SnapformContent tzdnMe')
         console.log(header)
@@ -232,8 +233,8 @@ def search(ville):
     is_possible2 = True
     name_div = "arc-srp_"
     num_div = 110
-    div = name_div + str(num_div)
 
+    div = name_div + str(num_div)
     driver.get(f'https://www.google.com/search?q=inurl%3Abusiness.site+%2B+%22{ville}%22')
     sleep(15)
     cookie_dialog()
@@ -250,7 +251,6 @@ def search(ville):
             print(div)
             urls = scraping_urls(div)
             scrapping_datas(urls)
-
         except Exception as e:
             is_possible = False
             print('Error num_div', e)
@@ -259,6 +259,7 @@ def search(ville):
             print(entreprise_contact)
         if num_div == 190:
             num_div = 1100
+
         else:
             num_div = num_div + 10
         div = name_div + str(num_div)
@@ -273,6 +274,7 @@ def search(ville):
         except:
             is_possible2 == False
             print("STOP")
+        div = name_div + str(num_div)
 
     clear_globals_urls()
     # create_file_with_list(ville, urls)
