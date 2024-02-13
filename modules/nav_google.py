@@ -1,7 +1,5 @@
 import random
-import time
 from datetime import datetime
-
 import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -17,11 +15,10 @@ from modules.mail_export import mail_export
 from modules.util import create_excel_datas
 
 global_urls = []
-entreprise_contact = {}
 # Use for click button next page when = transform: scale(0)
 button_attr_style_default: str = 'transform: scale(1);'
 options = Options()  # Set up Chrome options
-# options.add_argument('--headless=new')  # Commented for testing
+options.add_argument('--headless=new')  # Commented for testing
 driver = webdriver.Chrome(
     service=Service(),
     options=options
@@ -74,39 +71,27 @@ def verify_response():
 
 
 # Function to navigate to the last page of Google search results
-def click_next_button(omitted_result_page=False, with_omitted_result=False, click=False):
-    print("---go_last_page open---")
+def click_next_button():
     button_page: str = "T7sFge.sW9g3e.VknLRd"
     last_page_google: bool = False
-    # Find button "more result"
-    if click == True:
-        try:
-            driver.find_element(By.CLASS_NAME, button_page)
-        except NoSuchElementException:
-            print("Element button next page")
-        except Exception as e:
-            print("Button next page error, ", e)
-        # Continue navigating to the next page until the last page
-        while not last_page_google:
-            try:
-                button_page_style = driver.find_element(By.CLASS_NAME, button_page).get_attribute('style')
-            except NoSuchElementException:
-                print("Button page style attribute not present")
-                last_page_google = True
-                continue
-            except Exception as e:
-                print("Error in button page style attribute", e)
-                continue
-            else:
-                if button_page_style != button_attr_style_default:
-                    last_page_google = True
-                    print('info: last_page_google end while button page')
-                else:
-                    wait = WebDriverWait(driver, 10)
-                    next_button_page = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, button_page)))
-                    driver.execute_script("arguments[0].click();", next_button_page)
-            finally:
-                sleep(2)
+    try:
+        button_page_style = driver.find_element(By.CLASS_NAME, button_page).get_attribute('style')
+    except NoSuchElementException:
+        print("Button page style attribute not present")
+        # last_page_google = True
+    except Exception as e:
+        print("Error in button page style attribute", e)
+    else:
+        if button_page_style != button_attr_style_default:
+            last_page_google = True
+            print('info: last_page_google end while button page')
+            return last_page_google
+        else:
+            wait = WebDriverWait(driver, 10)
+            next_button_page = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, button_page)))
+            driver.execute_script("arguments[0].click();", next_button_page)
+    finally:
+        sleep(2)
 
     # if with_omitted_result:
     #     # If omitted result page, click on the "Omitted results" button and call the function recursively
@@ -138,30 +123,25 @@ def clear_globals_urls(urls):
 
 
 # Scrap les URls après avoir parcouru toutes les pages
-def scraping_urls(div):
-    counter = 0
-    temp = []
-    # Récupère toutes les URLs
+def scraping_urls():
     print("---scraping_url open---")
-    for url in driver.find_element(By.ID, div).find_elements(By.CLASS_NAME, "tjvcx.GvPZzd.cHaqb"):
+    liste = []
+    # Récupère toutes les URLs
+    for url in driver.find_elements(By.CLASS_NAME, "tjvcx.GvPZzd.cHaqb"):
         try:
             span_text = url.find_element(By.TAG_NAME, "span").text
             url = url.text.replace(span_text, "")
-            temp.append(url)
+            liste.append(url)
         except NoSuchElementException:
-            global_urls.append(url.text)
-            temp.append(url.text)
+            liste.append(url.text)
         except Exception as e:
             print("Append url in urls, ", e)
-        else:
-            counter += 1
     print("---scraping_url clause")
-    clear_globals_urls(temp)
-    return temp
+    clear_globals_urls(liste)
+    return liste
 
 
-def scrapping_datas(urls):
-    print(urls)
+def scrapping_datas(urls, entreprise_contact):
     user_agents = [
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'
         'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'
@@ -172,8 +152,8 @@ def scrapping_datas(urls):
         'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15'
     ]  # get num and name
     for url in urls:
-        print(url)
-        sleep(random.randint(25, 35))
+        print("SCRAP URL : ", url)
+        sleep(random.randint(35, 40))
         try:
             verify_response()
             driver_options = Options()
@@ -184,14 +164,18 @@ def scrapping_datas(urls):
         except Exception as e:
             print(e)
             continue
+        try:
 
-        soup = BeautifulSoup(driver.page_source, 'html.parser')
-        # get name and tel of the website
-        soup_name = soup.find("h1").getText()
-        soup_tel = regex_tel(soup.find('a', attrs={"itemprop": "telephone"}).get("href"))
+            soup = BeautifulSoup(driver.page_source, 'html.parser')
+            # get name and tel of the website
+            soup_name = soup.find("h1").getText()
+            soup_tel = regex_tel(soup.find('a', attrs={"itemprop": "telephone"}).get("href"))
+            entreprise_contact.update({soup_name: soup_tel})
+            print(soup_name + '\n' + soup_tel + '\n -----------')
+        except:
+            pass
+
         # Update dict for excel
-        entreprise_contact.update({soup_name: soup_tel})
-        print(soup_name + '\n' + soup_tel + '\n -----------')
 
 
 def form_input():
@@ -215,11 +199,11 @@ def form_input():
             let email = document.querySelector('.whsOnd.zHQkBf[type="email"]');
             email.value = 'email@gmail.com';
             email.dispatchEvent(new Event('input', { bubbles: true })); // Déclencher l'événement 'input'
-            
+
             let desc = document.querySelector('.KHxj8b.tL9Q4c');
             desc.value = 'Bonjour, cest Moi';
             desc.dispatchEvent(new Event('input', { bubbles: true })); // Déclencher l'événement 'input'
-            
+
             let button_form = document.querySelector('.U26fgb.O0WRkf.zZhnYe.e3Duub.C0oVfc.SS9F9d.M9Bg4d');
             button_form.click();
         """)
@@ -229,55 +213,42 @@ def form_input():
 
 # Execute la recherche pour chaque ville
 def search(ville):
-    is_possible = True
-    is_possible2 = True
-    name_div = "arc-srp_"
-    num_div = 110
-
-    div = name_div + str(num_div)
+    contact = {}
+    print(ville)
+    end = False
     driver.get(f'https://www.google.com/search?q=inurl%3Abusiness.site+%2B+%22{ville}%22')
     sleep(15)
     cookie_dialog()
     scroll_down()
+    sleep(5)
     try:
-        urls = scraping_urls("search")  # Navigate to the last page of search results
-        scrapping_datas(urls)
-        print("hello")
+        urls = scraping_urls()
+        print("URls: ", urls)
+        for url in urls:
+            global_urls.append(url)
+        scrapping_datas(urls, contact)
     except Exception as e:
-        print("Error div search ", e)
-    # Before click button
-    while is_possible == True:
-        try:
-            print(div)
-            urls = scraping_urls(div)
-            scrapping_datas(urls)
-        except Exception as e:
-            is_possible = False
-            print('Error num_div', e)
-        finally:
-            print(global_urls)
-            print(entreprise_contact)
-        if num_div == 190:
-            num_div = 1100
-
+        print("erreur sur la premiere page", e)
+    finally:
+        print("fin de la premiere page")
+    while not end:
+        click = click_next_button()
+        if click:
+            end = True
         else:
-            num_div = num_div + 10
-        div = name_div + str(num_div)
-
-    # After click button
-    while is_possible2 == True:
-        try:
-            click_next_button(click=True)
-            urls = scraping_urls(div)
-            scrapping_datas(urls)
-            num_div += 10
-        except:
-            is_possible2 == False
-            print("STOP")
-        div = name_div + str(num_div)
-
-    clear_globals_urls()
+            list = []
+            urls = scraping_urls()
+            for element in urls:
+                if element not in global_urls:
+                    list.append(element)
+            print(list)
+            scrapping_datas(list, contact)
+            for url in list:
+                global_urls.append(url)
+    print(global_urls)
+    print(contact)
+    clear_globals_urls(global_urls)
     # create_file_with_list(ville, urls)
     # companies_urls = retrieve_list_from_file(f"{ville}.txt")
-    create_excel_datas(entreprise_contact, ville)
+    create_excel_datas(contact, ville)
     mail_export(f'contact_entreprises_{ville}.xlsx')

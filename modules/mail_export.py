@@ -9,7 +9,7 @@ from email.mime.application import MIMEApplication
 def mail_export(filename):
     # Paramètres de connexion
     email = "samueletsamy@gmail.com"
-    password = "tnok lygh pdom jblb"
+    password = "vski nvpi qgcn yrcl"
     chemin_fichier = os.path.join(os.getcwd(), filename)
     print(chemin_fichier)
 
