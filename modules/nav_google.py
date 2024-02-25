@@ -153,7 +153,7 @@ def scrapping_datas(urls, entreprise_contact):
     ]  # get num and name
     for url in urls:
         print("SCRAP URL : ", url)
-        sleep(random.randint(35, 40))
+        sleep(random.randint(60, 75))
         try:
             verify_response()
             driver_options = Options()
@@ -233,7 +233,7 @@ def search(ville):
         print("fin de la premiere page")
     while not end:
         click = click_next_button()
-        if click:
+        if click or click is None:
             end = True
         else:
             list = []
